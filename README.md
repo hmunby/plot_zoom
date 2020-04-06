@@ -15,7 +15,7 @@ Dependencies:
 [PLINK v1.9](https://www.cog-genomics.org/plink2)
 
 R packages: 
-[Bioconductor: rtracklayer]([https://bioconductor.org/packages/release/bioc/html/rtracklayer.html)
+[Bioconductor: rtracklayer](https://bioconductor.org/packages/release/bioc/html/rtracklayer.html)
 
 
 ## Before you start
