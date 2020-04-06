@@ -1,7 +1,7 @@
 gemma2zoom
 ====
 
-gemma2zoom is a tool for visualising results from genome-wide analyses that test individual SNPs. The default parameters assume the results file has the same format as GEMMA output.
+gemma2zoom is a tool for visualising results from genome-wide analyses that give test values for individual sites. The default parameters assume the results file has the same format as GEMMA output but it can also be used to plot other results. 
 
 It produces a figure of the region with 3 panels: 
 - A manhattan plot of a local region around a focal SNP, colouring SNPs by their level of LD with the focal SNP.
@@ -46,6 +46,14 @@ E.g. The example Lake Masoko files were generated as follows:
 Or generally (input vcf can be gzipped or uncompressed):
 `plink --vcf dataset_name.vcf.gz --make-bed --set-missing-var-ids @:# --out dataset_name`
 
+### Formatting Input File 
+
+The input file containing test results to be plotted must be tab-delimited text file where each row provides information for a separate site in the genome.
+It must contain min. 3 columns containing the following: 
+- Site chromosome number
+- Site position
+- Test value
+Which columns contain these variables should be indicated using arguments `-x` or `--poscol`, `-y` or `--chrcol` and `-t` or `--testcol` respectively. 
 
 ## Usage
 ___
