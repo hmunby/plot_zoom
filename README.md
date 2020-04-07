@@ -52,8 +52,8 @@ The input file containing test results to be plotted must be tab-delimited text 
 It must contain min. 3 columns containing the following: 
 - Site chromosome number
 - Site position
-- Test value
-Which columns contain each of these variables should be indicated using arguments `-x` or `--poscol`, `-y` or `--chrcol` and `-t` or `--testcol` respectively. 
+- Test value <br>
+Which columns contain each of these variables should be indicated using arguments `-x` or `--poscol`, `-y` or `--chrcol` and `-t` or `--testcol` respectively. <br>
 This format and the default selections for the chromosome and position columns corresponds to the standard output from GWAS analyses with GEMMA.
 
 ## Usage
