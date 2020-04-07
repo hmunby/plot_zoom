@@ -12,12 +12,15 @@ testcol <- as.numeric(args[3])
 chrcol <- as.numeric(args[4])
 pscol <- as.numeric(args[5])
 focal_chrom <- as.numeric(args[6])
-focal_snp <- as.numeric(args[7])
+positions <- as.numeric(unlist((strsplit(args[7],","))))
+focal_snp <- positions[1]
 sig_line <- as.numeric(args[8])
 transform <- as.logical(as.numeric(args[9]))
 head <- as.logical(as.numeric(args[10]))
 output <- args[11]
 gtf_file <- args[12]
+win_start <- as.numeric(args[13])
+win_end <- as.numeric(args[14])
 
 # Read file 
 res <- read.table(data, header=head)
@@ -26,11 +29,11 @@ gtf_ensembl <-  rtracklayer::import(gtf_file)
 
 #### Extract points to plot 
 # Restrict to single chromosome & sort by position
-res <- res[which(res[,chrcol]==focal_chrom),]
-res <- res[order(res[,pscol]),]
+res <- res[which(res[,chrcol]==focal_chrom),c(chrcol,pscol,testcol)]
+res <- res[order(res[,2]),]
 
 # Check if focal_snp is present in plotting data
-if( !(focal_snp %in% res[,pscol]) ){
+if( !(focal_snp %in% res[,2]) ){
   stop("Focal SNP is not present in input data")
 } 
 
@@ -39,21 +42,17 @@ if( !(focal_snp %in% ld$BP_B) ){
   stop("Focal SNP is not present in VCF")
 }
 
-# Match SNPs from two input files and combine
-res <- res[which(res[,pscol] %in% ld$BP_B),]
-ld <- ld[which(ld$BP_B %in% res[,pscol]),]
+# Match SNPs from two input files, combine and subset to window
+res <- res[which(res[,2] %in% ld$BP_B),]
+ld <- ld[which(ld$BP_B %in% res[,2]),]
 points <- cbind(res, ld$R2)
+points <- points[which((points[,2] >= win_start) & (points[,2] <= win_end)),]
 
 #### Specify colours based on LD with focal SNP 
 rbPal <- colorRampPalette(c("darkblue","aquamarine","lawngreen","yellow","orange","red"))
 points$colour <- rbPal(10)[as.numeric(cut(points$`ld$R2`, breaks = 10))]
-fs <- which(points[,pscol] == focal_snp)
+fs <- which(points[,2] == focal_snp)
 points[fs,"colour"] <- "magenta"
-col_column <- which(colnames(points)=="colour")
-
-#### Annotation processing & functions 
-win_start = as.numeric(min(points[,pscol]))
-win_end = as.numeric(max(points[,pscol]))
 
 # Convert gtf to data.frame 
 gtf_ensembl_df <- as.data.frame(gtf_ensembl)
@@ -143,7 +142,13 @@ plot_gene <- function(gene_id, gtf, levels){
 
 ## Function to plot SNP density panel
 plot_SNPs <- function(SNP_position_vector){
-  plot(x=SNP_position_vector, y=rep(1,length(SNP_position_vector)), type="h", ylim=c(0,1), axes=FALSE, xlab="", ylab="SNPs", lwd=1.5)
+  plot(x=SNP_position_vector, y=rep(1,length(SNP_position_vector)), type="h", xlim=c(win_start,win_end), ylim=c(0,1), axes=FALSE, xlab="", ylab="SNPs", lwd=1.5)
+}
+
+## Function to add position labels 
+plot_label <- function(position, pos_yval_colour){
+  row <- which(pos_yval_colour[,1] == position)
+  text(x=pos_yval_colour[row,1], y=(pos_yval_colour[row,2]+0.03*max(pos_yval_colour[,2])), labels=paste0("chr",focal_chrom,":",position), cex = 1.2)
 }
 
 ## Function to plot test values panel
@@ -195,9 +200,10 @@ plot_test_values <- function(pos_yval_colour, log_transform, sig_threshold){
   pos_yval_colour <- pos_yval_colour[c(which(is.finite(pos_yval_colour[,2]))),]
   
   # Plotting
-  plot(x=pos_yval_colour[,1], y=pos_yval_colour[,2], pch=16, col=pos_yval_colour[,3], xlab=paste0("Position on chromosome ",focal_chrom), ylab=labely, cex.lab=1.2, ylim=c(miny,maxy), xaxt='n')
-  text(x=pos_yval_colour[fs,1], y=1.03*pos_yval_colour[fs,2], labels=paste0("chr",focal_chrom,":",focal_snp), cex = 1.2)
+  plot(x=pos_yval_colour[,1], y=pos_yval_colour[,2], pch=16, col=pos_yval_colour[,3], xlab=paste0("Position on chromosome ",focal_chrom), ylab=labely, cex.lab=1.2, xlim=c(win_start,win_end), ylim=c(miny,maxy), xaxt='n')
   legend("topleft", title=expression("R"^2),legend=c("focal SNP",1,0.8,0.6,0.4,0.2,0), col=c("magenta", rev(rbPal(6))), pch=20, cex=1.2,  bty="n")
+  # Add labels to focal SNP and other specified SNPs
+  lapply(positions, plot_label, pos_yval_colour=pos_yval_colour)
   # Add significance threshold to plot if specified 
   if(!is.na(sig_threshold)){
     abline(h=sig_threshold, col = "red", lwd=3) 
@@ -211,18 +217,23 @@ plot_annotations <- function(gene_id, gtf_subset_df){
   lapply(gene_id, plot_gene, gtf=gtf_subset_df, levels=levels)
 }
 
-# Test plotting all panels 
+# Set annotation panel height
 annot_h = 0.25+0.75*levels
 total_h = 9+annot_h
 png_h = 210*total_h
 
+# Plot all panels
 png(filename=paste0(output,"_regional_plot.png"), width=2800, height=png_h)
 plot.new()
 layout(matrix(c(1,0,2,0,3),ncol=1), widths=c(15,15,15,15,15), heights=c(0.8,0.6,6,0.6,annot_h))
 annot_h 
 par(mar = c(0,5,0,0), oma = c(5, 3, 2, 2), cex=2.5)
-plot_SNPs(points[,pscol])
-plot_test_values(points[,c(pscol,testcol,col_column)], transform, sig_line)
+plot_SNPs(points[,2])
+plot_test_values(points[,c(2,3,5)], transform, sig_line)
 plot_annotations(subset_genes[,"gene_id"], gtf_subset_df)
 mtext(text=paste0("Position on chromosome ", focal_chrom),side=1,line=1,outer=TRUE,cex=4)
 invisible(dev.off())
+
+# Ouput list of SNPs in window and their LD values
+colnames(points) <- c("chr","pos","test_value","R2_with_focalSNP","colour")
+write.table(points[,c(1,2,3,4)], paste0(output,"_plotted_SNP_values.txt"), quote=FALSE, sep = "\t", col.names=TRUE, row.names = FALSE)

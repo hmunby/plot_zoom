@@ -67,7 +67,7 @@ case $key in
 	shift
 	;;
 	-p|--fspos)
-	POS="$2"
+	POSLIST="$2"
 	shift
 	;;
 	-w|--window)
@@ -214,6 +214,10 @@ else
 fi
 
 # CHECK FOCAL SNP 
+# split 
+IFS=","
+read -ra POSITION_LIST <<< "$POSLIST"
+POS="${POSITION_LIST[0]}"
 
 # default focal SNP
 
@@ -317,7 +321,7 @@ else
 	 echo "OUTPUT: $OUTPREF"
 fi
 
-if [ "$PBFILE" == "BAD" ] || [ "$ANNOT" == "BAD" ] || [ "$TEST" == "BAD" ] || [ "$SIG" == "BAD" ] || [ "$LOG" == "BAD" ] || [ "$HEAD" == "BAD" ]
+if [ "$PBFILE" == "BAD" ] || [ "$ANNOT" == "BAD" ] || [ "$TEST" == "BAD" ] || [ "$SIG" == "BAD" ] || [ "$LOG" == "BAD" ] || [ "$HEAD" == "BAD" ] || [ "$LEFT" == "BAD" ] || [ "$RIGHT" == "BAD" ] 
 then
 	 exit
 else
@@ -354,10 +358,10 @@ plink --bfile $PBFILE \
 --out ${OUTPREF}
 
 # Run plotting R script
-$my_dir/region_plotter.R input_temp.txt ${OUTPREF}.ld $TEST $CHRCOL $PSCOL $CHROM $POS $SIG $LOG $HEAD $OUTPREF annot_temp.gtf
+$my_dir/region_plotter.R input_temp.txt "${OUTPREF}.ld" "$TEST" "$CHRCOL" "$PSCOL" "$CHROM" "$POSLIST" "$SIG" "$LOG" "$HEAD" "$OUTPREF" annot_temp.gtf "$LEFT" "$RIGHT"
 
 # Remove temporary files
-#rm input_temp.txt
-#rm annot_temp.gtf
+rm input_temp.txt
+rm annot_temp.gtf
 
 exit
