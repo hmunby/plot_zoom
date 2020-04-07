@@ -136,7 +136,7 @@ plot_gene <- function(gene_id, gtf, levels){
   }
   # plot labels 
   midpoint = (gtf_mygene[1,"start"]+gtf_mygene[1,"end"])/2
-  text(x=midpoint, y=t1+0.2*level_width, labels=lab, cex = 1.5*level_width, col = "red")
+  text(x=midpoint, y=t1+0.2*level_width, labels=lab, cex = 1.25*level_width, col = "red", font=2)
 }
 
 
