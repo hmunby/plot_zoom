@@ -210,11 +210,13 @@ fi
 # default focal SNP
 
 if [ -z "$CHROM" ] || [ -z "$POS" ]
-then
+	if ! [ "$IPUT" == "BAD" ]
+	then
 	 CHROM="$(awk -vchr="$CHRCOL" 'NR==2 {print $chr}' $IPUT)"
 	 POS="$(awk -vpos="$PSCOL" 'NR==2 {print $pos}' $IPUT)"
       echo "FOCALSNP: WARNING - Missing or incomplete focal SNP. Supply chromosome with option: -c | -fschr & position with option: -p | -fspos." 
       echo "          As a default the first SNP in the input file will be used - chr $CHROM pos $POS. (top SNP if input has been sorted by pval)" 
+    fi
 else
       echo "FOCALSNP: chromosome $CHROM position $POS" 
 fi 
