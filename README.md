@@ -1,16 +1,14 @@
-gemma2zoom
+plot_zoom
 ====
 
-gemma2zoom is a tool for visualising results from genome-wide analyses that give test values for individual sites. The default parameters assume the results file has the same format as GEMMA output but it can also be used to plot other results. 
+plot_zoom  is a tool for visualising results from genome-wide analyses that give test values for individual sites. The default parameters assume the results file has the same format as GEMMA output but it can also be used to plot other results. 
 
 It produces a figure of the region with 3 panels: 
 - A manhattan plot of a local region around a focal SNP, colouring SNPs by their level of LD with the focal SNP.
 - A plot showing the distribution of plotted SNPs.  
 - Gene annotations in the displayed region.
 
-The script itself is a wrapper around region_plotter.R which does the plotting, this R script must remain in the same directory as gemma2zoom for it to work. You can put into your path using a symbolic link: 
-
-`ln -s /path/to/gemma2zoom.sh ~/bin/plot_zoom`
+The script itself is a wrapper around region_plotter.R which does the plotting, this R script must remain in the same directory as gemma2zoom for it to work.
 
 Dependencies:
 
@@ -60,9 +58,9 @@ Which columns contain these variables should be indicated using arguments `-x` o
 ## Usage
 ___
 
-You must give the full path to the gemma2zoom executable script for now (i.e. don't put it in your path, it won't work)
+You must give the full path to the plot_zoom executable script for now (i.e. don't put it in your path, it won't work)
 
-Executing gemma2zoom without any options will print a list of arguments & descriptors:
+Executing plot_zoom  without any options will print a list of arguments & descriptors:
 
 ### Essential Arguments
 | Argument      |    Type    | Description |
@@ -87,4 +85,4 @@ Executing gemma2zoom without any options will print a list of arguments & descri
 
 ### Example
 
-`./gemma2zoom.sh -i example/masoko_sex_GWAS.assoc.txt -t 14 -b example/all_CalMas -a example/Astatotilapia_calliptera.fAstCal1.2.99.chr.gtf -c 19 -p 21581905 -w 100000 -s bfc -o example/masoko_sex_GWAS_chr19`
+`./plot_zoom.sh -i example/masoko_sex_GWAS.assoc.txt -t 14 -b example/all_CalMas -a example/Astatotilapia_calliptera.fAstCal1.2.99.chr.gtf -c 19 -p 21581905 -w 100000 -s bfc -o example/masoko_sex_GWAS_chr19`

@@ -62,30 +62,35 @@ gtf_ensembl_df <- as.data.frame(gtf_ensembl)
 gtf_subset_df <- gtf_ensembl_df[which(gtf_ensembl_df$seqnames == focal_chrom),]
 gtf_subset_df <- gtf_subset_df[which((gtf_subset_df$start >= win_start & gtf_subset_df$start <= win_end) | (gtf_subset_df$end >= win_start & gtf_subset_df$end <= win_end)),]
 
-# Get list of transcripts in region
-subset_transcripts <- gtf_subset_df[which(gtf_subset_df$type == "transcript"),c("transcript_id","gene_id","start","end")]
+# Get list of genes in region
+subset_genes <- gtf_subset_df[which(gtf_subset_df$type == "gene"),c("gene_id","start","end")]
 
-# Calculate transcripts levels
+# Calculate gene levels
 margin <- 1000
-subset_transcripts$level <- c()
+subset_genes$level <- c()
+subset_genes$t_start <- c()
+subset_genes$t_end <- c()
 gtf_subset_df$level <- c()
-for (i in 1:length(subset_transcripts$transcript_id)){
+for (i in 1:length(subset_genes$gene_id)){
+  # calculate extent of transcripts 
+  subset_genes[i,"t_start"] <- min(gtf_subset_df[which((gtf_subset_df$gene_id == subset_genes[i,"gene_id"]) & (gtf_subset_df$type == "transcript")),"start"])
+  subset_genes[i,"t_end"] <- max(gtf_subset_df[which((gtf_subset_df$gene_id == subset_genes[i,"gene_id"]) & (gtf_subset_df$type == "transcript")),"end"])
   if(i == 1){
-    subset_transcripts[i,"level"] <- 1
+    subset_genes[i,"level"] <- 1
   }else{
-    if(subset_transcripts[i,"start"] <= (subset_transcripts[(i-1),"end"]+margin)){
-      subset_transcripts[i,"level"] <- subset_transcripts[(i-1),"level"] + 1
-      if(subset_transcripts[i,"level"] >= 3){
-        last_entry_n_2 <- max(which(subset_transcripts$level == (subset_transcripts[i,"level"]-2)))
-        if(subset_transcripts[i,"start"] >= subset_transcripts[last_entry_n_2,"end"]+margin){
-          subset_transcripts[i,"level"] <- subset_transcripts[i,"level"] - 2 
+    if(subset_genes[i,"t_start"] <= (subset_genes[(i-1),"t_end"]+margin)){
+      subset_genes[i,"level"] <- subset_genes[(i-1),"level"] + 1
+      if(subset_genes[i,"level"] >= 3){
+        last_entry_n_2 <- max(which(subset_genes$level == (subset_genes[i,"level"]-2)))
+        if(subset_genes[i,"t_start"] >= subset_genes[last_entry_n_2,"t_end"]+margin){
+          subset_genes[i,"level"] <- subset_genes[i,"level"] - 2 
         }
       }
     }else{
-      subset_transcripts[i,"level"] <- 1
+      subset_genes[i,"level"] <- 1
     }
   }
-  gtf_subset_df[which(gtf_subset_df$transcript_id == subset_transcripts[i,"transcript_id"]), "level"] <- subset_transcripts[i,"level"]
+  gtf_subset_df[which(gtf_subset_df$gene_id == subset_genes[i,"gene_id"]), "level"] <- subset_genes[i,"level"]
 }
 levels <- max(gtf_subset_df$level, na.rm = TRUE)
 
@@ -94,44 +99,44 @@ plot_exon <- function(exon_row, b1, t1){
   rect(xleft = exon_row["start"], xright = exon_row["end"], ybottom=b1, ytop=t1, col = "red" , border = NA)
 }
 
-## Function to plot transcripts (subplot)
-plot_transcript <- function(transcript_id, gtf, levels){
+## Function to plot genes (subplot)
+plot_gene <- function(gene_id, gtf, levels){
   # subset the gtf to only gene of interest
-  gtf_mytranscript <- gtf[which(gtf$transcript_id == transcript_id),]
+  gtf_mygene <- gtf[which(gtf$gene_id == gene_id),]
   # Assign position based on levels
-  transcript_level <- gtf_mytranscript[1,"level"]
+  gene_level <- gtf_mygene[1,"level"]
   level_width <- 1/levels
-  m <- level_width*(levels-transcript_level)+0.5*level_width
+  m <- level_width*(levels-gene_level)+0.5*level_width
   t1 <- m + 0.3*level_width
   b1 <- m - 0.3*level_width
   # get label 
-  if(!is.na(gtf_mytranscript[1,"gene_name"])){
-    lab <- gtf_mytranscript[1,"gene_name"]
+  if(!is.na(gtf_mygene[1,"gene_name"])){
+    lab <- gtf_mygene[1,"gene_name"]
   } else{
-    lab <- transcript_id
+    lab <- gene_id
   }
-  if(gtf_mytranscript[1,"strand"] == "+"){
+  if(gtf_mygene[1,"strand"] == "+"){
     lab <- paste0(lab," >")
   }else{
     lab <- paste0("< ",lab)
   }
   # subset exons 
-  exons_gtf <- gtf_mytranscript[which(gtf_mytranscript$type == "exon"),]
+  exons_gtf <- gtf_mygene[which(gtf_mygene$type == "exon"),]
   # plot exons 
   apply(exons_gtf, 1, plot_exon, b1=b1, t1=t1)
-  # plot introns 
-  segments(x0 = gtf_mytranscript[which(gtf_mytranscript$type == "transcript"),"start"], y0 = m, x1 = gtf_mytranscript[which(gtf_mytranscript$type == "transcript"),"end"], y1 = m ,col = "red", lty = 3, lwd=3) 
+  # plot extent of transcripts
+  segments(x0 = subset_genes[which(subset_genes$gene_id == gene_id), "t_start"], y0 = m, x1 = subset_genes[which(subset_genes$gene_id == gene_id), "t_end"], y1 = m ,col = "red", lty = 1, lwd=3) 
   # plot 3UTR and 5UTR if present 
-  UTR_3 <- which(gtf_mytranscript$type == "three_prime_utr")
-  UTR_5 <- which(gtf_mytranscript$type == "five_prime_utr")
+  UTR_3 <- which(gtf_mygene$type == "three_prime_utr")
+  UTR_5 <- which(gtf_mygene$type == "five_prime_utr")
   if(length(UTR_3) != 0){
-    rect(xleft = gtf_mytranscript[UTR_3,"start"], xright = gtf_mytranscript[UTR_3,"end"], ybottom=b1, ytop=t1, col = NA , border = "red", lwd = 0.1)
+    rect(xleft = gtf_mygene[UTR_3,"start"], xright = gtf_mygene[UTR_3,"end"], ybottom=b1, ytop=t1, col = NA , border = "red", lwd = 0.1)
   }
   if(length(UTR_5) != 0){
-    rect(xleft = gtf_mytranscript[UTR_5,"start"], xright = gtf_mytranscript[UTR_5,"end"], ybottom=b1, ytop=t1, col = NA , border = "red", lwd = 0.1)
+    rect(xleft = gtf_mygene[UTR_5,"start"], xright = gtf_mygene[UTR_5,"end"], ybottom=b1, ytop=t1, col = NA , border = "red", lwd = 0.1)
   }
   # plot labels 
-  midpoint = (gtf_mytranscript[1,"start"]+gtf_mytranscript[1,"end"])/2
+  midpoint = (gtf_mygene[1,"start"]+gtf_mygene[1,"end"])/2
   text(x=midpoint, y=t1+0.2*level_width, labels=lab, cex = 1.5*level_width, col = "red")
 }
 
@@ -200,10 +205,10 @@ plot_test_values <- function(pos_yval_colour, log_transform, sig_threshold){
 }
 
 ## Function to plot annotations panel
-plot_annotations <- function(transcript_id, gtf_subset_df){
+plot_annotations <- function(gene_id, gtf_subset_df){
   plot(0,type='n', axes = FALSE, ann=FALSE, xlim=c(win_start, win_end), ylim=c(0, 1.15), frame.plot= TRUE)
   axis(3, xpd = TRUE)
-  lapply(transcript_id, plot_transcript, gtf=gtf_subset_df, levels=levels)
+  lapply(gene_id, plot_gene, gtf=gtf_subset_df, levels=levels)
 }
 
 # Test plotting all panels 
@@ -218,6 +223,6 @@ annot_h
 par(mar = c(0,5,0,0), oma = c(5, 3, 2, 2), cex=2.5)
 plot_SNPs(points[,pscol])
 plot_test_values(points[,c(pscol,testcol,col_column)], transform, sig_line)
-plot_annotations(subset_transcripts[,"transcript_id"], gtf_subset_df)
+plot_annotations(subset_genes[,"gene_id"], gtf_subset_df)
 mtext(text=paste0("Position on chromosome ", focal_chrom),side=1,line=1,outer=TRUE,cex=4)
 invisible(dev.off())
