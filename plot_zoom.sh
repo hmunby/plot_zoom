@@ -107,9 +107,11 @@ echo "---------------------------OPTIONS----------------------------"
 
 if [ -z "$IPUT" ]
 then
+	 IPUT="BAD"
      echo "** ERROR: No input results file given to be plotted. Option: -i | --input. **"
 elif ! [ -f "$IPUT" ]
 then
+	 IPUT="BAD"
 	 echo "** ERROR: Input results file can't be found. Option: -i | --input. **"
 else
      echo "INPUT: $IPUT"
@@ -117,19 +119,23 @@ fi
 
 if [ -z "$PBFILE" ]
 then
+      PBFILE="BAD"
       echo "** ERROR: No PLINK bed file given to calculate LD. Option: -b | --plinkbed. **"
 elif ! [ -f "${PBFILE}.bed" ]
 then
-	 echo "** ERROR: PLINK bed file can't be found. Option: -b | --plinkbed. **"
+	  PBFILE="BAD"
+	  echo "** ERROR: PLINK bed file can't be found. Option: -b | --plinkbed. **"
 else
       echo "PLINKBED: $PBFILE"
 fi
 
 if [ -z "$ANNOT" ]
 then
+     ANNOT="BAD"
      echo "** ERROR: No GTF annotation file given. Option: -a | --annot. **"
 elif ! [ -f "$ANNOT" ]
 then
+	 ANNOT="BAD"
 	 echo "** ERROR: GTF annotation file can't be found. Option: -a | --annot. **"
 else
      echo "ANNOTATION: $ANNOT"
@@ -155,12 +161,15 @@ fi
 ncol=$(awk -F'\t' '{print NF; exit}' "$IPUT")
 if [ -z "$TEST" ]
 then
+     TEST="BAD"
      echo "** ERROR: No test statistic column specified for plotting. Option: -t | --testcol **" 
 elif ! [[ "$TEST" =~ ^[1-9]+$ ]]
 then
+	 TEST="BAD"
 	 echo "** ERROR: Input provided to test column is not a positive integer. Option -t | --testcol **"
 elif [ "$TEST" -gt "$ncol" ]
 then
+     TEST="BAD"
      echo "** ERROR: Column $TEST selected to be plotted but only $ncol columns in input file. Option: -t | --testcol **"
 else
 	 echo "TEST: Plotting test statistic values from column $TEST"
@@ -172,9 +181,11 @@ then
      	echo "CHRCOL: 1 (default). Option: -x | --chrcol" 
 elif ! [[ "$CHRCOL" =~ ^[1-9]+$ ]]
 then
+	  CHRCOL="BAD"
 	 echo "** ERROR: Input provided to position column is not a positive integer. Option -x | --chrcol **"
 elif [ "$CHRCOL" -gt "$ncol" ]
 then
+      CHRCOL="BAD"
       echo "** ERROR: Column $CHRCOL indicated as chromosome column but only $ncol columns in input file. Option: -x | --chrcol **"
 else
 	 echo "CHRCOL: $CHRCOL"
@@ -186,10 +197,12 @@ then
       echo "POSCOL: 3 (default). Option: -y | --poscol" 
 elif ! [[ "$PSCOL" =~ ^[1-9]+$ ]]
 then
+	 PSCOL="BAD"
 	 echo "** ERROR: Input provided to position column is not a positive integer. Option -y | --poscol **"
 elif [ "$TEST" -gt "$ncol" ]
 then
-      echo "** ERROR: Column $PSCOL indicated as chromosome column but only $ncol columns in input file. Option: -y | --poscol **"
+	 PSCOL="BAD"
+     echo "** ERROR: Column $PSCOL indicated as chromosome column but only $ncol columns in input file. Option: -y | --poscol **"
 else
 	 echo "POSCOL: $PSCOL"
 fi
@@ -252,8 +265,8 @@ then
      LOG=1
      echo "LOG: Plotting -log10 transformation of points by default. Option -l | --logtrans"
 else
-	LOG="BAD"
-	echo "** ERROR: Input given to option -l | -logtrans is not 0 or 1. **"
+	 LOG="BAD"
+	 echo "** ERROR: Input given to option -l | -logtrans is not 0 or 1. **"
 fi
 
 if [ -z "$OUTPREF" ]
@@ -261,12 +274,12 @@ then
 	 OUTPREF="chr${CHROM}_${POS}_${WIN}"
 	 echo "OUTPUT: No output prefix given. Outputting files to working directory using default naming."
 else
-	echo "OUTPUT: $OUTPREF"
+	 echo "OUTPUT: $OUTPREF"
 fi
 
-if [ -z "$IPUT" ] || [ -z "$PBFILE" ] || [ -z "$ANNOT" ] || [ -z "$TEST" ] || [ "$SIG" == "BAD" ] || [ "$LOG" == "BAD" ] || [ "$HEAD" == "BAD" ]
+if [ "$IPUT" == "BAD"] || [ "$PBFILE" == "BAD" ] || [ "$ANNOT" == "BAD" ] || [ "$TEST" == "BAD" ] || [ "$SIG" == "BAD" ] || [ "$LOG" == "BAD" ] || [ "$HEAD" == "BAD" ]
 then
-     exit
+	 exit
 else
 	 echo "Ready to run."     
 fi
@@ -275,11 +288,11 @@ fi
 window_plink=$(( $WIN / 1000 ))
 
 # Generate temporary input file with only entries from chromosome being plotted 
-awk -F, -vX="$CHROM" -vY="$CHRCOL" '{if(int($Y) == X) {print}}' $IPUT > input_temp.txt
+awk -F, -v X="$CHROM" -v Y="$CHRCOL" '{if(int($Y) == X) {print}}' $IPUT > input_temp.txt
 sed -i "1s/^/$(head -n1 $IPUT)\n/" input_temp.txt
 
 # Generate temporary annotation file with only entries from chromosome being plotted
-awk -F, -vX="$CHROM" '{if(int($1) == X) {print}}' $ANNOT > annot_temp.gtf
+awk -F, -v X="$CHROM" '{if(int($1) == X) {print}}' $ANNOT > annot_temp.gtf
 
 echo "---------------------PLINK_LD_CALCULATION---------------------"
 # Calculate LD between focal SNP and surrounding SNPs
@@ -295,7 +308,7 @@ plink --bfile $PBFILE \
 $my_dir/region_plotter.R input_temp.txt ${OUTPREF}.ld $TEST $CHRCOL $PSCOL $CHROM $POS $SIG $LOG $HEAD $OUTPREF annot_temp.gtf
 
 # Remove temporary files
-rm input_temp.txt
-rm annot_temp.gtf
+#rm input_temp.txt
+#rm annot_temp.gtf
 
 exit
