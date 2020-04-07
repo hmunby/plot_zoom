@@ -122,7 +122,7 @@ plot_gene <- function(gene_id, gtf, levels){
   # subset exons 
   exons_gtf <- gtf_mygene[which(gtf_mygene$type == "exon"),]
   # plot exons 
-  apply(exons_gtf, 1, plot_exon, b1=b1, t1=t1)
+  invisible(apply(exons_gtf, 1, plot_exon, b1=b1, t1=t1))
   # plot extent of transcripts
   segments(x0 = subset_genes[which(subset_genes$gene_id == gene_id), "t_start"], y0 = m, x1 = subset_genes[which(subset_genes$gene_id == gene_id), "t_end"], y1 = m ,col = "red", lty = 1, lwd=3) 
   # plot 3UTR and 5UTR if present 
@@ -214,7 +214,7 @@ plot_test_values <- function(pos_yval_colour, log_transform, sig_threshold){
 plot_annotations <- function(gene_id, gtf_subset_df){
   plot(0,type='n', axes = FALSE, ann=FALSE, xlim=c(win_start, win_end), ylim=c(0, 1.15), frame.plot= TRUE)
   axis(3, xpd = TRUE)
-  lapply(gene_id, plot_gene, gtf=gtf_subset_df, levels=levels)
+  invisible(lapply(gene_id, plot_gene, gtf=gtf_subset_df, levels=levels))
 }
 
 # Set annotation panel height
@@ -226,7 +226,6 @@ png_h = 210*total_h
 png(filename=paste0(output,"_regional_plot.png"), width=3000, height=png_h)
 plot.new()
 layout(matrix(c(1,0,2,0,3),ncol=1), widths=c(17,17,17,17,17), heights=c(0.8,0.6,6,0.6,annot_h))
-annot_h 
 par(mar = c(0,5,0,0), oma = c(5, 3, 2, 2), cex=2.5)
 plot_SNPs(points[,2])
 plot_test_values(points[,c(2,3,5)], transform, sig_line)
@@ -237,3 +236,4 @@ invisible(dev.off())
 # Ouput list of SNPs in window and their LD values
 colnames(points) <- c("chr","pos","test_value","R2_with_focalSNP","colour")
 write.table(points[,c(1,2,3,4)], paste0(output,"_plotted_SNP_values.txt"), quote=FALSE, sep = "\t", col.names=TRUE, row.names = FALSE)
+q()
