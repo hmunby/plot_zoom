@@ -107,12 +107,12 @@ echo "---------------------------OPTIONS----------------------------"
 
 if [ -z "$IPUT" ]
 then
-	 IPUT="BAD"
      echo "** ERROR: No input results file given to be plotted. Option: -i | --input. **"
+     exit
 elif ! [ -f "$IPUT" ]
 then
-	 IPUT="BAD"
 	 echo "** ERROR: Input results file can't be found. Option: -i | --input. **"
+	 exit
 else
      echo "INPUT: $IPUT"
 fi
@@ -211,10 +211,8 @@ fi
 
 if [ -z "$CHROM" ] || [ -z "$POS" ]
 then
-	if ! [ "$IPUT" == "BAD" ]
-	then
-	 CHROM="$(awk -vchr="$CHRCOL" 'NR==2 {print $chr}' $IPUT)"
-	 POS="$(awk -vpos="$PSCOL" 'NR==2 {print $pos}' $IPUT)"
+	  CHROM="$(awk -vchr="$CHRCOL" 'NR==2 {print $chr}' $IPUT)"
+	  POS="$(awk -vpos="$PSCOL" 'NR==2 {print $pos}' $IPUT)"
       echo "FOCALSNP: WARNING - Missing or incomplete focal SNP. Supply chromosome with option: -c | -fschr & position with option: -p | -fspos." 
       echo "          As a default the first SNP in the input file will be used - chr $CHROM pos $POS. (top SNP if input has been sorted by pval)" 
     fi
@@ -280,7 +278,7 @@ else
 	 echo "OUTPUT: $OUTPREF"
 fi
 
-if [ "$IPUT" == "BAD" ] || [ "$PBFILE" == "BAD" ] || [ "$ANNOT" == "BAD" ] || [ "$TEST" == "BAD" ] || [ "$SIG" == "BAD" ] || [ "$LOG" == "BAD" ] || [ "$HEAD" == "BAD" ]
+if [ "$PBFILE" == "BAD" ] || [ "$ANNOT" == "BAD" ] || [ "$TEST" == "BAD" ] || [ "$SIG" == "BAD" ] || [ "$LOG" == "BAD" ] || [ "$HEAD" == "BAD" ]
 then
 	 exit
 else
