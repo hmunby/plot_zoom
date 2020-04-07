@@ -223,9 +223,9 @@ total_h = 9+annot_h
 png_h = 210*total_h
 
 # Plot all panels
-png(filename=paste0(output,"_regional_plot.png"), width=2800, height=png_h)
+png(filename=paste0(output,"_regional_plot.png"), width=3000, height=png_h)
 plot.new()
-layout(matrix(c(1,0,2,0,3),ncol=1), widths=c(15,15,15,15,15), heights=c(0.8,0.6,6,0.6,annot_h))
+layout(matrix(c(1,0,2,0,3),ncol=1), widths=c(17,17,17,17,17), heights=c(0.8,0.6,6,0.6,annot_h))
 annot_h 
 par(mar = c(0,5,0,0), oma = c(5, 3, 2, 2), cex=2.5)
 plot_SNPs(points[,2])
