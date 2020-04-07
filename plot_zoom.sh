@@ -277,7 +277,7 @@ else
 	 echo "OUTPUT: $OUTPREF"
 fi
 
-if [ "$IPUT" == "BAD"] || [ "$PBFILE" == "BAD" ] || [ "$ANNOT" == "BAD" ] || [ "$TEST" == "BAD" ] || [ "$SIG" == "BAD" ] || [ "$LOG" == "BAD" ] || [ "$HEAD" == "BAD" ]
+if [ "$IPUT" == "BAD" ] || [ "$PBFILE" == "BAD" ] || [ "$ANNOT" == "BAD" ] || [ "$TEST" == "BAD" ] || [ "$SIG" == "BAD" ] || [ "$LOG" == "BAD" ] || [ "$HEAD" == "BAD" ]
 then
 	 exit
 else
