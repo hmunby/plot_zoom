@@ -8,7 +8,7 @@ It produces a figure of the region with 3 panels:
 - A plot showing the distribution of plotted SNPs.  
 - Gene annotations in the displayed region.
 
-The script itself is a wrapper around region_plotter.R which does the plotting, this R script must remain in the same directory as gemma2zoom for it to work.
+The script itself is a wrapper around region_plotter.R which does the plotting, this R script must remain in the same directory as gemma2zoom.
 
 Dependencies:
 
@@ -52,8 +52,9 @@ The input file containing test results to be plotted must be tab-delimited text 
 It must contain min. 3 columns containing the following: 
 - Site chromosome number
 - Site position
-- Test value
-Which columns contain these variables should be indicated using arguments `-x` or `--poscol`, `-y` or `--chrcol` and `-t` or `--testcol` respectively. 
+- Test value <br>
+Which columns contain each of these variables should be indicated using arguments `-x` or `--poscol`, `-y` or `--chrcol` and `-t` or `--testcol` respectively. <br>
+This format and the default selections for the chromosome and position columns corresponds to the standard output from GWAS analyses with GEMMA.
 
 ## Usage
 ___
@@ -69,20 +70,35 @@ Executing plot_zoom  without any options will print a list of arguments & descri
 | `-b` <br>`--plinkbed` | File | Path to PLINK bed file for LD calculations (prefix only).  |
 | `-a` <br>`--annot`| File      |    Path to GTF annotation file. |
 | `-o` <br>`--outpref` | String |  Path prefix for output files (Plot and PLINK LD calculation files). | 
-| `-t` <br>`--testcol`  | Integer | Index of column containing test statistic to be plotted (1-indexed). |
+| `-t` <br>`--testcol`  | Int | Index of column containing test statistic to be plotted (1-indexed). |
 
 ### Optional Arguments 
 | Argument      |    Type    | Default | Description | 
-| :-------------- | ----------| :----: | ----- |
+| :-------------- |:----------:| :----: | ----- |
 | `-h` <br>`--header`  | 0 or 1 | 1 | Indicates whether the line of the input file `-i` is a header (1) or not (0). | 
 | `-x` <br>`--chrcol`  | Int | 1 | Index of column containing site chromosome number (default corresponds to GEMMA output).| 
 | `-y` <br>`--poscol`  | Int | 3 | Index of column containing site position (default corresponds to GEMMA output). | 
 |`-c` <br>`--fschr`  | Int | Chromosome number of first entry in input file | Focal SNP: **chromosome number** (default is top SNP only if input is sorted by statistic value). | 
-|`-p` <br>`--fspos`  | Int | Position of first entry in input file | Focal SNP: **position** (default is top SNP only if input is sorted by statistic value). | 
-| `-w` <br> `--window` | Int | 50,000 |           Extent of window either side of focal SNP to be plotted in base pairs. | 
+|`-p` <br>`--fspos`  | Int | Position of first entry in input file | Focal SNP: **position**. Can also be used to specify other SNPs to be labelled in the plot by listing them, comma separated. (default is top SNP only if input is sorted by statistic value) | 
+| `-w` <br> `--window` | Int,Int | 50000,50000 | Start and end positions defining the window to be plotted (default uses a window 50,000bp upstream and downstream of the focal SNP. | 
 | `-s` <br> `--sigline` | Numeric or 'bfc' | NA |Value of significance threshold value to be plotted. Option bfc will plot a Bonferroni correction for the number of tests of p=0.05. If unused no sig line plotted.
 | `-l` <br> `--logtrans` | 0 or 1 | 1 |           Plot given statistic values (0) or their -log10 transform (1). <br>(default is to log transform)
 
+### Ouput files
+
+- Plot consisting of 3 panels (outpref_regional_plot.png) : SNP density plot; SNP test values coloured by LD with focal SNP; Gene Annoations
+- Table of test values and R2 values (wrt focal SNP) for each plotted SNP in the window (outpref_plotted_SNP_values.txt)
+
+
 ### Example
 
-`./plot_zoom.sh -i example/masoko_sex_GWAS.assoc.txt -t 14 -b example/all_CalMas -a example/Astatotilapia_calliptera.fAstCal1.2.99.chr.gtf -c 19 -p 21581905 -w 100000 -s bfc -o example/masoko_sex_GWAS_chr19`
+`./plot_zoom.sh \` <br>
+` -i masoko_sex_GWAS.assoc.txt \` <br>
+` -t 14 \` <br>
+` -b Astatotilapia_calliptera.fAstCal1.2.99.chr.gtf \` <br>
+` -c 19 \` <br>
+` -p 21581905,21728957 \` <br>
+` -w 21500000,21750000 \` <br>
+` -s bfc \` <br>
+` -o masoko_sex_GWAS_chr19`
+
