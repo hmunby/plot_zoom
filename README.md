@@ -69,11 +69,11 @@ Executing plot_zoom  without any options will print a list of arguments & descri
 | `-b` <br>`--plinkbed` | File | Path to PLINK bed file for LD calculations (prefix only).  |
 | `-a` <br>`--annot`| File      |    Path to GTF annotation file. |
 | `-o` <br>`--outpref` | String |  Path prefix for output files (Plot and PLINK LD calculation files). | 
-| `-t` <br>`--testcol`  | Integer | Index of column containing test statistic to be plotted (1-indexed). |
+| `-t` <br>`--testcol`  | Int | Index of column containing test statistic to be plotted (1-indexed). |
 
 ### Optional Arguments 
 | Argument      |    Type    | Default | Description | 
-| :-------------- | ----------| :----: | ----- |
+| :-------------- |:----------:| :----: | ----- |
 | `-h` <br>`--header`  | 0 or 1 | 1 | Indicates whether the line of the input file `-i` is a header (1) or not (0). | 
 | `-x` <br>`--chrcol`  | Int | 1 | Index of column containing site chromosome number (default corresponds to GEMMA output).| 
 | `-y` <br>`--poscol`  | Int | 3 | Index of column containing site position (default corresponds to GEMMA output). | 
