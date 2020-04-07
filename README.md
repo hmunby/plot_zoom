@@ -54,6 +54,7 @@ It must contain min. 3 columns containing the following:
 - Site position
 - Test value
 Which columns contain each of these variables should be indicated using arguments `-x` or `--poscol`, `-y` or `--chrcol` and `-t` or `--testcol` respectively. 
+This format and the default selections for the chromosome and position columns corresponds to the standard output from GWAS analyses with GEMMA.
 
 ## Usage
 ___
