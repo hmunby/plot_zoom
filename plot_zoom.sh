@@ -210,6 +210,7 @@ fi
 # default focal SNP
 
 if [ -z "$CHROM" ] || [ -z "$POS" ]
+then
 	if ! [ "$IPUT" == "BAD" ]
 	then
 	 CHROM="$(awk -vchr="$CHRCOL" 'NR==2 {print $chr}' $IPUT)"
