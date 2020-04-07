@@ -231,7 +231,7 @@ fi
 # CHECK WINDOW 
 # split input into separate variables 
 
-read -ra LIMS <<< "$WINDOW"
+read -ra LIMS <<< "$WIN"
 LEFT="${LIMS[0]}"
 RIGHT="${LIMS[1]}"
 
