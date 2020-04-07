@@ -91,13 +91,13 @@ Executing plot_zoom  without any options will print a list of arguments & descri
 
 ### Example
 
-`./plot_zoom.sh \`
-` -i masoko_sex_GWAS.assoc.txt \`
-` -t 14 \`
-` -b Astatotilapia_calliptera.fAstCal1.2.99.chr.gtf \`
-` -c 19 \`
-` -p 21581905,21728957 \`
-` -w 21500000,21750000 \`
-` -s bfc \`
+`./plot_zoom.sh \` <br>
+` -i masoko_sex_GWAS.assoc.txt \` <br>
+` -t 14 \` <br>
+` -b Astatotilapia_calliptera.fAstCal1.2.99.chr.gtf \` <br>
+` -c 19 \` <br>
+` -p 21581905,21728957 \` <br>
+` -w 21500000,21750000 \` <br>
+` -s bfc \` <br>
 ` -o masoko_sex_GWAS_chr19`
 
