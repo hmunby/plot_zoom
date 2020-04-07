@@ -363,5 +363,8 @@ $my_dir/region_plotter.R input_temp.txt "${OUTPREF}.ld" "$TEST" "$CHRCOL" "$PSCO
 # Remove temporary files
 rm input_temp.txt
 rm annot_temp.gtf
+rm "${OUTPREF}.ld"
+rm "${OUTPREF}.log"
+rm "${OUTPREF}.nosex"
 
 exit
