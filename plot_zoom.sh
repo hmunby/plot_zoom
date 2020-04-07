@@ -18,9 +18,9 @@ echo "-x | --chrcol     <int>           Number of column (1-indexed) indicating 
 echo "-y | --poscol     <int>           Number of column (1-indexed) indicating site position. (default is col 3)"
 echo "-b | --plinkbed   <string>        Path to PLINK BED file (generated directly from VCF) to be used for LD calculations (prefix only)."
 echo "-a | --annot      <string>        Path to GTF annotation file."
-echo "-c | --fschr      <int>           Focal SNP: chromosome. (default is FIRST POSITION in assoc input file i.e. top SNP only if sorted by pval)"
-echo "-p | --fspos      <int>           Focal SNP: position. (default is FIRST POSITION in assoc input file i.e. top SNP only if sorted by pval)"
-echo "-w | --window     <int>           Size of window either side of focal SNP to be plotted in base pairs. (default is 50,000 bp)"
+echo "-c | --fschr      <int>           Focal chromosome. (default is firt entry in input file i.e. top SNP only if sorted by pval)"
+echo "-p | --fspos      <int>           Focal SNP position and pos of any other SNPs to be labelled, comma separated. (default focal SNP as above)"
+echo "-w | --window     <int,int>       Plotting window start and end positions, comma separated. (default plots 50,000 bp either side of focal SNP)"
 echo "-s | --sigline    <float|string>  Significance threshold value OR 'bfc' to plot Bonferroni corrected p=0.05. If unused no sig line plotted."
 echo "-l | --logtrans   <0|1>           Plot absolute statistic values (0) or their -log10 transform (1). (default is to log transform)" 
 echo "-o | --outpref    <string>        Path/filename for output files (Plot and PLINK LD calculation files)."
@@ -105,6 +105,7 @@ echo "Dependencies: PLINK, R: Bioconductor, rtracklayer"
 echo "Usage: bash plot_zoom.sh [options]"
 echo "---------------------------OPTIONS----------------------------"
 
+# CHECK INPUT FILE 
 if [ -z "$IPUT" ]
 then
      echo "** ERROR: No input results file given to be plotted. Option: -i | --input. **"
@@ -117,6 +118,7 @@ else
      echo "INPUT: $IPUT"
 fi
 
+# CHECK PLINK BED FILE 
 if [ -z "$PBFILE" ]
 then
       PBFILE="BAD"
@@ -129,6 +131,7 @@ else
       echo "PLINKBED: $PBFILE"
 fi
 
+# CHECK ANNOTATION FILE
 if [ -z "$ANNOT" ]
 then
      ANNOT="BAD"
@@ -141,7 +144,7 @@ else
      echo "ANNOTATION: $ANNOT"
 fi
 
-
+# CHECK HEADER ARGUMENT / SET DEFAULT 
 if [ "$HEAD" == 0 ]
 then
 	 echo "HEADER: No."
@@ -157,13 +160,14 @@ else
 	echo "** ERROR: Input given to option -h | -header is not 0 or 1. **"
 fi
 
-# check number of columns in input file 
+# CHECK TEST COLUMN IS VALID
+# check number of columns in input file for comparison
 ncol=$(awk -F'\t' '{print NF; exit}' "$IPUT")
 if [ -z "$TEST" ]
 then
      TEST="BAD"
      echo "** ERROR: No test statistic column specified for plotting. Option: -t | --testcol **" 
-elif ! [[ "$TEST" =~ ^[1-9]+$ ]]
+elif ! [[ "$TEST" =~ ^[1-9]+[0-9]*$ ]]
 then
 	 TEST="BAD"
 	 echo "** ERROR: Input provided to test column is not a positive integer. Option -t | --testcol **"
@@ -175,11 +179,12 @@ else
 	 echo "TEST: Plotting test statistic values from column $TEST"
 fi
 
+# CHECK CHROMOSOME COLUMN IS VALID
 if [ -z "$CHRCOL" ]
 then
 	CHRCOL=1
      	echo "CHRCOL: 1 (default). Option: -x | --chrcol" 
-elif ! [[ "$CHRCOL" =~ ^[1-9]+$ ]]
+elif ! [[ "$CHRCOL" =~ ^[1-9]+[0-9]*$ ]]
 then
 	  CHRCOL="BAD"
 	 echo "** ERROR: Input provided to position column is not a positive integer. Option -x | --chrcol **"
@@ -191,11 +196,12 @@ else
 	 echo "CHRCOL: $CHRCOL"
 fi
 
+# CHECK POSITION COLUMN IS VALID 
 if [ -z "$PSCOL" ]
 then
       PSCOL=3
       echo "POSCOL: 3 (default). Option: -y | --poscol" 
-elif ! [[ "$PSCOL" =~ ^[1-9]+$ ]]
+elif ! [[ "$PSCOL" =~ ^[1-9]+[0-9]*$ ]]
 then
 	 PSCOL="BAD"
 	 echo "** ERROR: Input provided to position column is not a positive integer. Option -y | --poscol **"
@@ -206,6 +212,8 @@ then
 else
 	 echo "POSCOL: $PSCOL"
 fi
+
+# CHECK FOCAL SNP 
 
 # default focal SNP
 
@@ -219,14 +227,44 @@ else
       echo "FOCALSNP: chromosome $CHROM position $POS" 
 fi 
 
-if [ -z "$WIN" ]
+
+# CHECK WINDOW 
+# split input into separate variables 
+
+read -ra LIMS <<< "$WINDOW"
+LEFT="${LIMS[0]}"
+RIGHT="${LIMS[1]}"
+
+
+if [ -z "$LEFT" ]
 then
-      WIN="50000"
-      echo "WINDOW: Default window of 50,000 bp either side of the focal SNP will be plotted. Option: -w | --window."
+      LEFT="$(( ${POS} - 50000 ))"
+elif ! [[ "$LEFT" =~ ^[0-9]+$ ]]
+then 
+	  LEFT="BAD"
+fi 
+
+if [ -z "$RIGHT" ]
+then
+      RIGHT="$(( ${POS} + 50000 ))"
+elif ! [[ "$RIGHT" =~ ^[0-9]+$ ]]
+then 
+	  RIGHT="BAD"
+fi 
+
+if [ "$RIGHT" == BAD ] || [ "$LEFT" == BAD ]
+then
+      echo "** ERROR : Plotting window input ill-formatted. Option: -w | --window. **"
+elif [ "$POS" -gt "$RIGHT" ] || [ "$POS" -lt "$LEFT" ] 
+then
+      echo "** ERROR : Focal SNP $POS is not within selected window of ${LEFT} - ${RIGHT}. **"
+      exit
 else
-      echo "WINDOW: Window of $WIN bp either side of the focal SNP will be plotted."
+	  echo "PLOTTING WINDOW: ${CHROM}:${LEFT}-${RIGHT}"
 fi
 
+
+# CHECK SIGNIFICANCE THRESHOLD
 # perform test to see if significance threshold is interpretable as numeric by R, sig_isgood = 1 if good, 0 if bad. 
 sig_isgood=$( echo $SIG | R --vanilla --slave -e 'rv=tryCatch(scan("stdin", quiet=TRUE), error=function(e){}); if (is.null(rv)) cat(0) else cat(1)')
 
@@ -254,6 +292,7 @@ else
 	 echo "** ERROR: Significance threshold supplied is not a valid numerical input. Option: -s | --sigline **" 
 fi
 
+# CHECK LOG TRANSFORMATION ARGUMENT
 if [ "$LOG" == 0 ]
 then
 	 echo "LOG: Plotting points WITHOUT log transformation."
@@ -269,9 +308,10 @@ else
 	 echo "** ERROR: Input given to option -l | -logtrans is not 0 or 1. **"
 fi
 
+# CHECK OUTPUT LOCATION PREFIX / SET DEFAULT
 if [ -z "$OUTPREF" ]
 then
-	 OUTPREF="chr${CHROM}_${POS}_${WIN}"
+	 OUTPREF="chr${CHROM}_${POS}_"
 	 echo "OUTPUT: No output prefix given. Outputting files to working directory using default naming."
 else
 	 echo "OUTPUT: $OUTPREF"
@@ -284,8 +324,17 @@ else
 	 echo "Ready to run."     
 fi
 
-# Convert window size to kb for PLINK
-window_plink=$(( $WIN / 1000 ))
+# Convert window to spacing from focal SNP in kbfor PLINK
+LEFT_SIZE=$(( $POS - $LEFT ))
+RIGHT_SIZE=$(( $RIGHT - $POS ))
+if [ "$LEFT_SIZE" -gt "$RIGHT_SIZE" ]
+then
+	WIDTH="$LEFT_SIZE"
+else
+	WIDTH="$RIGHT_SIZE"
+fi
+
+window_plink=$( echo $WIDTH | R --vanilla --slave -e 'width_bp=as.numeric(scan("stdin", quiet=TRUE)); width_kb=ceiling(width_bp/1000); cat(width_kb)')
 
 # Generate temporary input file with only entries from chromosome being plotted 
 awk -F, -v X="$CHROM" -v Y="$CHRCOL" '{if(int($Y) == X) {print}}' $IPUT > input_temp.txt
