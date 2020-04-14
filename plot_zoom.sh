@@ -10,20 +10,23 @@ echo "--------------------------plot_zoom--------------------------"
 echo "Description: Wrapper around PLINK and region_plotter.R to output regional plots of the results of genomic analyses."
 echo "Dependencies: PLINK, R: Bioconductor, rtracklayer"
 echo "Usage: bash plot_zoom.sh [options]"
-echo "OPTIONS:"
+echo "ARGUMENTS"
+echo "Required:"
 echo "-i | --input      <string>        Path to input file containing results to be plotted."
-echo "-h | --header     <0|1>           First line of input file is not (0) or is (1) a header. (default assumes header present)"
 echo "-t | --testcol    <int>           Number of column (1-indexed) containing test statistic to be plotted."
-echo "-x | --chrcol     <int>           Number of column (1-indexed) indicating site chromosome. (default is col 1)"
-echo "-y | --poscol     <int>           Number of column (1-indexed) indicating site position. (default is col 3)"
 echo "-b | --plinkbed   <string>        Path to PLINK BED file (generated directly from VCF) to be used for LD calculations (prefix only)."
 echo "-a | --annot      <string>        Path to GTF annotation file."
+echo "-o | --outpref    <string>        Path/filename for output files (Plot and PLINK LD calculation files)."
+echo "Optional:"
+echo "-h | --header     <0|1>           First line of input file is not (0) or is (1) a header. (default assumes header present)"
+echo "-x | --chrcol     <int>           Number of column (1-indexed) indicating site chromosome. (default is col 1)"
+echo "-y | --poscol     <int>           Number of column (1-indexed) indicating site position. (default is col 3)"
 echo "-c | --fschr      <int>           Focal chromosome. (default is firt entry in input file i.e. top SNP only if sorted by pval)"
 echo "-p | --fspos      <int>           Focal SNP position and pos of any other SNPs to be labelled, comma separated. (default focal SNP as above)"
 echo "-w | --window     <int,int>       Plotting window start and end positions, comma separated. (default plots 50,000 bp either side of focal SNP)"
 echo "-s | --sigline    <float|string>  Significance threshold value OR 'bfc' to plot Bonferroni corrected p=0.05. If unused no sig line plotted."
-echo "-l | --logtrans   <0|1>           Plot absolute statistic values (0) or their -log10 transform (1). (default is to log transform)" 
-echo "-o | --outpref    <string>        Path/filename for output files (Plot and PLINK LD calculation files)."
+echo "-l | --logtrans   <0|1>           Plot absolute statistic values (0) or their -log10 transform (1). (default is to log transform)"
+echo "-d | --diameter   <float>         Diameter of points (scaling factor) in plot. (default is 1)"
 exit
 fi
 
@@ -80,6 +83,10 @@ case $key in
 	;;
 	-l|--logtrans)
 	LOG="$2"
+	shift
+	;;
+	-d|--diameter)
+	DIAM="$2"
 	shift
 	;;
 	-o|--outpref)
@@ -264,7 +271,7 @@ then
       echo "** ERROR : Focal SNP $POS is not within selected window of ${LEFT} - ${RIGHT}. **"
       exit
 else
-	  echo "PLOTTING WINDOW: ${CHROM}:${LEFT}-${RIGHT}"
+	  echo "PLOTTING WINDOW: chr${CHROM}:${LEFT}-${RIGHT}"
 fi
 
 
@@ -309,7 +316,19 @@ then
      echo "LOG: Plotting -log10 transformation of points by default. Option -l | --logtrans"
 else
 	 LOG="BAD"
-	 echo "** ERROR: Input given to option -l | -logtrans is not 0 or 1. **"
+	 echo "** ERROR: Input given to option -l | --logtrans is not 0 or 1. **"
+fi
+
+# CHECK DIAMETER ARGUMENT
+if [ -z "$DIAM" ]
+then
+	DIAM=1
+elif ! [[ "$DIAM" =~ ^([0-9]*[.])?[0-9]+$ ]]
+then
+	DIAM="BAD"
+	echo "** ERROR: Input supplied to option -d | --diameter is not a float. **"
+else
+	echo "DIAMETER: Diamater of points in plot scaled by ${DIAM}"
 fi
 
 # CHECK OUTPUT LOCATION PREFIX / SET DEFAULT
@@ -321,7 +340,7 @@ else
 	 echo "OUTPUT: $OUTPREF"
 fi
 
-if [ "$PBFILE" == "BAD" ] || [ "$ANNOT" == "BAD" ] || [ "$TEST" == "BAD" ] || [ "$SIG" == "BAD" ] || [ "$LOG" == "BAD" ] || [ "$HEAD" == "BAD" ] || [ "$LEFT" == "BAD" ] || [ "$RIGHT" == "BAD" ] 
+if [ "$PBFILE" == "BAD" ] || [ "$ANNOT" == "BAD" ] || [ "$TEST" == "BAD" ] || [ "$SIG" == "BAD" ] || [ "$LOG" == "BAD" ] || [ "$HEAD" == "BAD" ] || [ "$LEFT" == "BAD" ] || [ "$RIGHT" == "BAD" ] || [ "$DIAM" == "BAD" ]
 then
 	 exit
 else
@@ -358,7 +377,7 @@ plink --bfile $PBFILE \
 --out ${OUTPREF}
 
 # Run plotting R script
-$my_dir/region_plotter.R input_temp.txt "${OUTPREF}.ld" "$TEST" "$CHRCOL" "$PSCOL" "$CHROM" "$POSLIST" "$SIG" "$LOG" "$HEAD" "$OUTPREF" annot_temp.gtf "$LEFT" "$RIGHT"
+$my_dir/region_plotter.R input_temp.txt "${OUTPREF}.ld" "$TEST" "$CHRCOL" "$PSCOL" "$CHROM" "$POSLIST" "$SIG" "$LOG" "$HEAD" "$OUTPREF" annot_temp.gtf "$LEFT" "$RIGHT" "$DIAM"
 
 # Remove temporary files
 rm input_temp.txt

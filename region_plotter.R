@@ -21,6 +21,7 @@ output <- args[11]
 gtf_file <- args[12]
 win_start <- as.numeric(args[13])
 win_end <- as.numeric(args[14])
+diam <- as.numeric(args[15])
 
 # Read file 
 res <- read.table(data, header=head)
@@ -200,11 +201,11 @@ plot_test_values <- function(pos_yval_colour, log_transform, sig_threshold){
   pos_yval_colour <- pos_yval_colour[c(which(is.finite(pos_yval_colour[,2]))),]
   
   # Plotting
-  plot(x=pos_yval_colour[,1], y=pos_yval_colour[,2], pch=16, col=pos_yval_colour[,3], xlab=paste0("Position on chromosome ",focal_chrom), ylab=labely, cex.lab=1.2, xlim=c(win_start,win_end), ylim=c(miny,maxy), xaxt='n')
-  legend("topleft", title=expression("R"^2),legend=c("focal SNP",1,0.8,0.6,0.4,0.2,0), col=c("magenta", rev(rbPal(6))), pch=20, cex=1.2,  bty="n")
+  plot(x=pos_yval_colour[,1], y=pos_yval_colour[,2], pch=21, col="black", bg=pos_yval_colour[,3], lwd=2, xlab=paste0("Position on chromosome ",focal_chrom), ylab=labely, cex.lab=1.2, xlim=c(win_start,win_end), ylim=c(miny,maxy), xaxt='n', cex=diam*1.5)
+  legend("topleft", title=expression("R"^2),legend=c("focal SNP",1,0.8,0.6,0.4,0.2,0), pt.bg=c("magenta", rev(rbPal(6))), col="black", pch=21, pt.cex=diam*1.5,  bty="n", pt.lwd=2)
   # Add labels to focal SNP and other specified SNPs
   lapply(positions, plot_label, pos_yval_colour=pos_yval_colour)
-  # Add significance threshold to plot if specified 
+  # Add significance threshold to plot if specified
   if(!is.na(sig_threshold)){
     abline(h=sig_threshold, col = "red", lwd=3) 
   }

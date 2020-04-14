@@ -83,6 +83,7 @@ Executing plot_zoom  without any options will print a list of arguments & descri
 | `-w` <br> `--window` | Int,Int | 50000,50000 | Start and end positions defining the window to be plotted (default uses a window 50,000bp upstream and downstream of the focal SNP. | 
 | `-s` <br> `--sigline` | Numeric or 'bfc' | NA |Value of significance threshold value to be plotted. Option bfc will plot a Bonferroni correction for the number of tests of p=0.05. If unused no sig line plotted.
 | `-l` <br> `--logtrans` | 0 or 1 | 1 |           Plot given statistic values (0) or their -log10 transform (1). <br>(default is to log transform)
+| `-d` <br> `--diameter` | Float | 1 | Point diamater scaling factor. | 
 
 ### Ouput files
 
