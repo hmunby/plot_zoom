@@ -17,6 +17,9 @@ Dependencies:
 R packages: 
 [Bioconductor: rtracklayer](https://bioconductor.org/packages/release/bioc/html/rtracklayer.html)
 
+Installation: 
+`git pull https://github.com/hmunby/plot_zoom/`
+Ready to use once repository has been pulled. Keep both .R and .sh scripts in the same directory and give path to the plot_zoom.sh to run. 
 
 ## Before you start
 ____
