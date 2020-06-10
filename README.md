@@ -8,7 +8,7 @@ It produces a figure of the region with 3 panels:
 - A plot showing the distribution of plotted SNPs.  
 - Gene annotations in the displayed region.
 
-The script itself is a wrapper around region_plotter.R which does the plotting, this R script must remain in the same directory as gemma2zoom.
+The script itself is a wrapper around region_plotter.R which does the plotting, this R script must remain in the same directory as the plot_zoom executable.
 
 Dependencies:
 
