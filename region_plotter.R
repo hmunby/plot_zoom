@@ -23,6 +23,9 @@ win_start <- as.numeric(args[13])
 win_end <- as.numeric(args[14])
 diam <- as.numeric(args[15])
 
+# Load library
+library(rtracklayer)
+
 # Read file 
 res <- read.table(data, header=head)
 ld <- read.table(ld_file, header=T)

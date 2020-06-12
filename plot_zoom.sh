@@ -377,7 +377,7 @@ plink --bfile $PBFILE \
 --out ${OUTPREF}
 
 # Run plotting R script
-$my_dir/region_plotter.R input_temp.txt "${OUTPREF}.ld" "$TEST" "$CHRCOL" "$PSCOL" "$CHROM" "$POSLIST" "$SIG" "$LOG" "$HEAD" "$OUTPREF" annot_temp.gtf "$LEFT" "$RIGHT" "$DIAM"
+Rscript $my_dir/region_plotter.R input_temp.txt "${OUTPREF}.ld" "$TEST" "$CHRCOL" "$PSCOL" "$CHROM" "$POSLIST" "$SIG" "$LOG" "$HEAD" "$OUTPREF" annot_temp.gtf "$LEFT" "$RIGHT" "$DIAM"
 
 # Remove temporary files
 rm input_temp.txt
