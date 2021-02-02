@@ -7,7 +7,7 @@
 if [ "$#" -lt 1 ]
 then
 echo "--------------------------plot_zoom--------------------------"
-echo "Description: Wrapper around PLINK and region_plotter.R to output regional plots of the results of genomic analyses."
+echo "Description: Wrapper around PLINK and region_plotter.R to output local plots of the results of genomic analyses."
 echo "Dependencies: PLINK, R: Bioconductor, rtracklayer"
 echo "Usage: bash plot_zoom.sh [options]"
 echo "ARGUMENTS"
@@ -22,11 +22,14 @@ echo "-h | --header     <0|1>           First line of input file is not (0) or i
 echo "-x | --chrcol     <int>           Number of column (1-indexed) indicating site chromosome. (default is col 1)"
 echo "-y | --poscol     <int>           Number of column (1-indexed) indicating site position. (default is col 3)"
 echo "-c | --fschr      <int>           Focal chromosome. (default is firt entry in input file i.e. top SNP only if sorted by pval)"
-echo "-p | --fspos      <int>           Focal SNP position and pos of any other SNPs to be labelled, comma separated. (default focal SNP as above)"
+echo "-p | --fspos      <int|int,-,->   Focal SNP position and pos of any other SNPs to be labelled, comma separated. (default focal SNP as above)"
 echo "-w | --window     <int,int>       Plotting window start and end positions, comma separated. (default plots 50,000 bp either side of focal SNP)"
 echo "-s | --sigline    <float|string>  Significance threshold value OR 'bfc' to plot Bonferroni corrected p=0.05. If unused no sig line plotted."
 echo "-l | --logtrans   <0|1>           Plot absolute statistic values (0) or their -log10 transform (1). (default is to log transform)"
 echo "-d | --diameter   <float>         Diameter of points (scaling factor) in plot. (default is 1)"
+echo "-f | --fontsize   <float>         Base font size scaling factor. (default is 1)"
+echo "-g | --genelabs   <0|1>           Setting to 0 removes gene annotation labels (default is to include them, 1)"
+echo "-z | --highlight  <int,int>       Start and end positions of a region to highlight, command separated. (no highlight if option not supplied)"
 exit
 fi
 
@@ -89,6 +92,18 @@ case $key in
 	DIAM="$2"
 	shift
 	;;
+	-f|--fontsize)
+	FONT="$2"
+	shift
+	;;
+	-g|--genelabs)
+	GLAB="$2"
+	shift
+	;;
+	-z|--highlight)
+	HIL="$2"
+	shift
+	;;
 	-o|--outpref)
 	OUTPREF="$2"
 	shift
@@ -133,7 +148,7 @@ then
 elif ! [ -f "${PBFILE}.bed" ]
 then
 	  PBFILE="BAD"
-	  echo "** ERROR: PLINK bed file can't be found. Option: -b | --plinkbed. **"
+	  echo "** ERROR: PLINK bed file can't be found - please supply prefix ONLY (myfile not myfile.bed) . Option: -b | --plinkbed. **"
 else
       echo "PLINKBED: $PBFILE"
 fi
@@ -164,7 +179,7 @@ then
      echo "HEADER: Yes (default). Option -h | --header"
 else
 	HEAD="BAD"
-	echo "** ERROR: Input given to option -h | -header is not 0 or 1. **"
+	echo "** ERROR: Input given to option -h | --header is not 0 or 1. **"
 fi
 
 # CHECK TEST COLUMN IS VALID
@@ -222,8 +237,7 @@ fi
 
 # CHECK FOCAL SNP 
 # split 
-IFS=","
-read -ra POSITION_LIST <<< "$POSLIST"
+IFS="," read -ra POSITION_LIST <<< "$POSLIST"
 POS="${POSITION_LIST[0]}"
 
 # default focal SNP
@@ -242,7 +256,7 @@ fi
 # CHECK WINDOW 
 # split input into separate variables 
 
-read -ra LIMS <<< "$WIN"
+IFS="," read -ra LIMS <<< "$WIN"
 LEFT="${LIMS[0]}"
 RIGHT="${LIMS[1]}"
 
@@ -303,7 +317,7 @@ else
 	 echo "** ERROR: Significance threshold supplied is not a valid numerical input. Option: -s | --sigline **" 
 fi
 
-# CHECK LOG TRANSFORMATION ARGUMENT
+# CHECK LOG TRANSFORMATION ARGUMENT / SET DEFAULT
 if [ "$LOG" == 0 ]
 then
 	 echo "LOG: Plotting points WITHOUT log transformation."
@@ -319,7 +333,8 @@ else
 	 echo "** ERROR: Input given to option -l | --logtrans is not 0 or 1. **"
 fi
 
-# CHECK DIAMETER ARGUMENT
+
+# CHECK DIAMETER ARGUMENT / SET DEFAULT 
 if [ -z "$DIAM" ]
 then
 	DIAM=1
@@ -331,6 +346,56 @@ else
 	echo "DIAMETER: Diamater of points in plot scaled by ${DIAM}"
 fi
 
+# CHECK FONTSIZE ARGUMENT / SET DEFAULT
+if [ -z "$FONT" ]
+then
+	FONT=1
+elif ! [[ "$FONT" =~ ^([0-9]*[.])?[0-9]+$ ]]
+then
+	FONT="BAD"
+	echo "** ERROR: Input supplied to option -f | --fontsize is not a float. **"
+else
+	echo "FONTSIZE: Font sizes scaled by ${FONT}"
+fi
+
+# CHECK GENE LABELS ARGUMENT / SET DEFAULT 
+if [ "$GLAB" == 0 ]
+then
+	 echo "LABEL GENES: No."
+elif [ "$GLAB" == 1 ]
+then
+	 echo "LABEL GENES: Yes."
+elif [ -z "$GLAB" ]
+then
+     GLAB=1
+     echo "LABEL GENES: Yes (default). Option -g | --genelabs"
+else
+	GLAB="BAD"
+	echo "** ERROR: Input given to option -g | --genelabs is not 0 or 1. **"
+fi
+
+# CHECK HIGHLIGHT / SET DEFAULT
+if [ -z "$HIL" ]
+then
+	HIL="NA,NA"
+else
+	IFS="," read -ra HLIMS <<< "$HIL"
+	LEFT_H="${HLIMS[0]}"
+	RIGHT_H="${HLIMS[1]}"
+	if ! [[ "$LEFT_H" =~ ^[0-9]+$ ]]
+	then 
+	  HIL="BAD"
+	  echo "** ERROR : Highlight input ill-formatted. Option: -z | --highlight. **"
+	elif ! [[ "$RIGHT_H" =~ ^[0-9]+$ ]]
+	then 
+	  HIL="BAD"
+	  echo "** ERROR : Highlight input ill-formatted. Option: -z | --highlight. **"
+	else
+	  echo "HIGHLIGHT REGION: chr${CHROM}:${LEFT_H}-${RIGHT_H}"
+	fi 
+fi
+
+
 # CHECK OUTPUT LOCATION PREFIX / SET DEFAULT
 if [ -z "$OUTPREF" ]
 then
@@ -340,7 +405,7 @@ else
 	 echo "OUTPUT: $OUTPREF"
 fi
 
-if [ "$PBFILE" == "BAD" ] || [ "$ANNOT" == "BAD" ] || [ "$TEST" == "BAD" ] || [ "$SIG" == "BAD" ] || [ "$LOG" == "BAD" ] || [ "$HEAD" == "BAD" ] || [ "$LEFT" == "BAD" ] || [ "$RIGHT" == "BAD" ] || [ "$DIAM" == "BAD" ]
+if [ "$PBFILE" == "BAD" ] || [ "$ANNOT" == "BAD" ] || [ "$TEST" == "BAD" ] || [ "$SIG" == "BAD" ] || [ "$LOG" == "BAD" ] || [ "$HEAD" == "BAD" ] || [ "$LEFT" == "BAD" ] || [ "$RIGHT" == "BAD" ] || [ "$DIAM" == "BAD" ] || [ "$FONT" == "BAD" ] || [ "$GLAB" == "BAD" ] || [ "$HIL" == "BAD" ] 
 then
 	 exit
 else
@@ -377,7 +442,7 @@ plink --bfile $PBFILE \
 --out ${OUTPREF}
 
 # Run plotting R script
-Rscript $my_dir/region_plotter.R input_temp.txt "${OUTPREF}.ld" "$TEST" "$CHRCOL" "$PSCOL" "$CHROM" "$POSLIST" "$SIG" "$LOG" "$HEAD" "$OUTPREF" annot_temp.gtf "$LEFT" "$RIGHT" "$DIAM"
+Rscript $my_dir/region_plotter.R input_temp.txt "${OUTPREF}.ld" "$TEST" "$CHRCOL" "$PSCOL" "$CHROM" "$POSLIST" "$SIG" "$LOG" "$HEAD" "$OUTPREF" annot_temp.gtf "$LEFT" "$RIGHT" "$DIAM" "$FONT" "$GLAB" "$HIL"
 
 # Remove temporary files
 rm input_temp.txt

@@ -3,8 +3,12 @@
 # Plot zoomed plot around GWAS hit and highlight specific SNPs
 # manhattan_zoom.R [GEMMA association output file] [PLINK ld output file] [focal snp: chr] [focal snp: pos] [test statistic pval] [output prefix]
 
-#### Import arguments
+#### Import arguments, load library ####
 
+## Load library 
+suppressMessages(library(rtracklayer))
+
+## Import args 
 args <- commandArgs(trailingOnly=TRUE)
 data <- args[1]
 ld_file <- args[2]
@@ -22,16 +26,31 @@ gtf_file <- args[12]
 win_start <- as.numeric(args[13])
 win_end <- as.numeric(args[14])
 diam <- as.numeric(args[15])
+font_size <- as.numeric(args[16])
+gene_labels <- as.logical(as.numeric(args[17]))
+highlight <- suppressWarnings(as.numeric(unlist((strsplit(args[18],",")))))
 
-# Load library
-library(rtracklayer)
+if(is.na(highlight[1])){
+  highlight <- NA
+}
 
-# Read file 
-res <- read.table(data, header=head)
-ld <- read.table(ld_file, header=T)
-gtf_ensembl <-  rtracklayer::import(gtf_file)
+## Plotting params - parameters that you may want to wish to change but are not given as program args 
+rbPal <- colorRampPalette(c("darkblue","aquamarine","lawngreen","yellow","orange","red")) # LD colour palette - default rainbow 
+focal_snp_col <- "magenta" # focal SNP col - default magenta 
+highlight_col <- "#DCDCDC" # highlight region col - default light gray 
+axis_label_scaling <- 1.25 # Scaling factor for axis titles relative to other text elements
+annot_label_scaling <- 1.1 # Gene label font scaling (note: also later multiplied by a scaling factor determined by number of gene rows) 
+snp_label_scaling <- 1 # Scaling factor for SNP label relative to other text elements 
 
-#### Extract points to plot 
+#### Read files, subset data, set colours ####
+
+## Read files 
+res <- read.table(data, header=head) # main input to plot test values from 
+ld <- read.table(ld_file, header=T) # plink LD output (pre-subsetted in wrapper)
+gtf_ensembl <- as.data.frame(rtracklayer::import(gtf_file)) # annotation file in gtf format 
+
+## Extract points to plot from data inputs, specifiy colours and annotation levels 
+
 # Restrict to single chromosome & sort by position
 res <- res[which(res[,chrcol]==focal_chrom),c(chrcol,pscol,testcol)]
 res <- res[order(res[,2]),]
@@ -52,32 +71,28 @@ ld <- ld[which(ld$BP_B %in% res[,2]),]
 points <- cbind(res, ld$R2)
 points <- points[which((points[,2] >= win_start) & (points[,2] <= win_end)),]
 
-#### Specify colours based on LD with focal SNP 
-rbPal <- colorRampPalette(c("darkblue","aquamarine","lawngreen","yellow","orange","red"))
-points$colour <- rbPal(10)[as.numeric(cut(points$`ld$R2`, breaks = 10))]
+# Specify colours based on LD with focal SNP 
+points$colour <- rbPal(10)[as.numeric(cut(points$`ld$R2`, breaks = 10))] 
 fs <- which(points[,2] == focal_snp)
-points[fs,"colour"] <- "magenta"
-
-# Convert gtf to data.frame 
-gtf_ensembl_df <- as.data.frame(gtf_ensembl)
+points[fs,"colour"] <- focal_snp_col
 
 # Subset to chromosome & region of interest 
-gtf_subset_df <- gtf_ensembl_df[which(gtf_ensembl_df$seqnames == focal_chrom),]
-gtf_subset_df <- gtf_subset_df[which((gtf_subset_df$start >= win_start & gtf_subset_df$start <= win_end) | (gtf_subset_df$end >= win_start & gtf_subset_df$end <= win_end)),]
+gtf_ensembl <- gtf_ensembl[which(gtf_ensembl$seqnames == focal_chrom),]
+gtf_ensembl <- gtf_ensembl[which((gtf_ensembl$start >= win_start & gtf_ensembl$start <= win_end) | (gtf_ensembl$end >= win_start & gtf_ensembl$end <= win_end)),]
 
 # Get list of genes in region
-subset_genes <- gtf_subset_df[which(gtf_subset_df$type == "gene"),c("gene_id","start","end")]
+subset_genes <- gtf_ensembl[which(gtf_ensembl$type == "gene"),c("gene_id","start","end")]
 
 # Calculate gene levels
 margin <- 1000
 subset_genes$level <- c()
 subset_genes$t_start <- c()
 subset_genes$t_end <- c()
-gtf_subset_df$level <- c()
+gtf_ensembl$level <- c()
 for (i in 1:length(subset_genes$gene_id)){
   # calculate extent of transcripts 
-  subset_genes[i,"t_start"] <- min(gtf_subset_df[which((gtf_subset_df$gene_id == subset_genes[i,"gene_id"]) & (gtf_subset_df$type == "transcript")),"start"])
-  subset_genes[i,"t_end"] <- max(gtf_subset_df[which((gtf_subset_df$gene_id == subset_genes[i,"gene_id"]) & (gtf_subset_df$type == "transcript")),"end"])
+  subset_genes[i,"t_start"] <- min(gtf_ensembl[which((gtf_ensembl$gene_id == subset_genes[i,"gene_id"]) & (gtf_ensembl$type == "transcript")),"start"])
+  subset_genes[i,"t_end"] <- max(gtf_ensembl[which((gtf_ensembl$gene_id == subset_genes[i,"gene_id"]) & (gtf_ensembl$type == "transcript")),"end"])
   if(i == 1){
     subset_genes[i,"level"] <- 1
   }else{
@@ -93,70 +108,27 @@ for (i in 1:length(subset_genes$gene_id)){
       subset_genes[i,"level"] <- 1
     }
   }
-  gtf_subset_df[which(gtf_subset_df$gene_id == subset_genes[i,"gene_id"]), "level"] <- subset_genes[i,"level"]
+  gtf_ensembl[which(gtf_ensembl$gene_id == subset_genes[i,"gene_id"]), "level"] <- subset_genes[i,"level"]
 }
-levels <- max(gtf_subset_df$level, na.rm = TRUE)
+levels <- max(gtf_ensembl$level, na.rm = TRUE)
 
-##  Function to plot exon annotation (subplot)
-plot_exon <- function(exon_row, b1, t1){
-  rect(xleft = exon_row["start"], xright = exon_row["end"], ybottom=b1, ytop=t1, col = "red" , border = NA)
-}
-
-## Function to plot genes (subplot)
-plot_gene <- function(gene_id, gtf, levels){
-  # subset the gtf to only gene of interest
-  gtf_mygene <- gtf[which(gtf$gene_id == gene_id),]
-  # Assign position based on levels
-  gene_level <- gtf_mygene[1,"level"]
-  level_width <- 1/levels
-  m <- level_width*(levels-gene_level)+0.5*level_width
-  t1 <- m + 0.3*level_width
-  b1 <- m - 0.3*level_width
-  # get label 
-  if(!is.na(gtf_mygene[1,"gene_name"])){
-    lab <- gtf_mygene[1,"gene_name"]
-  } else{
-    lab <- gene_id
-  }
-  if(gtf_mygene[1,"strand"] == "+"){
-    lab <- paste0(lab," >")
-  }else{
-    lab <- paste0("< ",lab)
-  }
-  # subset exons 
-  exons_gtf <- gtf_mygene[which(gtf_mygene$type == "exon"),]
-  # plot exons 
-  invisible(apply(exons_gtf, 1, plot_exon, b1=b1, t1=t1))
-  # plot extent of transcripts
-  segments(x0 = subset_genes[which(subset_genes$gene_id == gene_id), "t_start"], y0 = m, x1 = subset_genes[which(subset_genes$gene_id == gene_id), "t_end"], y1 = m ,col = "red", lty = 1, lwd=3) 
-  # plot 3UTR and 5UTR if present 
-  UTR_3 <- which(gtf_mygene$type == "three_prime_utr")
-  UTR_5 <- which(gtf_mygene$type == "five_prime_utr")
-  if(length(UTR_3) != 0){
-    rect(xleft = gtf_mygene[UTR_3,"start"], xright = gtf_mygene[UTR_3,"end"], ybottom=b1, ytop=t1, col = NA , border = "red", lwd = 0.1)
-  }
-  if(length(UTR_5) != 0){
-    rect(xleft = gtf_mygene[UTR_5,"start"], xright = gtf_mygene[UTR_5,"end"], ybottom=b1, ytop=t1, col = NA , border = "red", lwd = 0.1)
-  }
-  # plot labels 
-  midpoint = (gtf_mygene[1,"start"]+gtf_mygene[1,"end"])/2
-  text(x=midpoint, y=t1+0.2*level_width, labels=lab, cex = 1.25*level_width, col = "red", font=2)
-}
-
-
-## Function to plot SNP density panel
+#### Function to plot SNP density panel ####
 plot_SNPs <- function(SNP_position_vector){
-  plot(x=SNP_position_vector, y=rep(1,length(SNP_position_vector)), type="h", xlim=c(win_start,win_end), ylim=c(0,1), axes=FALSE, xlab="", ylab="SNPs", lwd=1.5)
+  plot(x=SNP_position_vector, y=rep(1,length(SNP_position_vector)), pch=NA, xlim=c(win_start,win_end), ylim=c(0,1), axes=FALSE, xlab="", ylab="SNPs", cex.lab = font_size*axis_label_scaling)
+  if(length(highlight) == 2){
+    rect(xleft = highlight[1], xright = highlight[2], ybottom=-1, ytop=2, col = highlight_col, border = NA) # plot highlight
+  }
+  points(x=SNP_position_vector, y=rep(1,length(SNP_position_vector)), type="h", lwd=1.5)
 }
 
-## Function to add position labels 
+#### Function to add position labels ####
 plot_label <- function(position, pos_yval_colour){
   row <- which(pos_yval_colour[,1] == position)
-  text(x=pos_yval_colour[row,1], y=(pos_yval_colour[row,2]+0.03*max(pos_yval_colour[,2])), labels=paste0("chr",focal_chrom,":",position), cex = 1.2)
+  text(x=pos_yval_colour[row,1], y=(pos_yval_colour[row,2]+0.03*max(pos_yval_colour[,2])), labels=paste0("chr",focal_chrom,":",position), cex = font_size*snp_label_scaling, font = 2)
 }
 
-## Function to plot test values panel
-plot_test_values <- function(pos_yval_colour, log_transform, sig_threshold){
+#### Function to plot test values panel ####
+plot_test_values <- function(pos_yval_colour, log_transform, sig_threshold, diameter, highlight){
   
   if(log_transform == TRUE){
     # Test if there are any zero
@@ -204,8 +176,12 @@ plot_test_values <- function(pos_yval_colour, log_transform, sig_threshold){
   pos_yval_colour <- pos_yval_colour[c(which(is.finite(pos_yval_colour[,2]))),]
   
   # Plotting
-  plot(x=pos_yval_colour[,1], y=pos_yval_colour[,2], pch=21, col="black", bg=pos_yval_colour[,3], lwd=2, xlab=paste0("Position on chromosome ",focal_chrom), ylab=labely, cex.lab=1.2, xlim=c(win_start,win_end), ylim=c(miny,maxy), xaxt='n', cex=diam*1.5)
-  legend("topleft", title=expression("R"^2),legend=c("focal SNP",1,0.8,0.6,0.4,0.2,0), pt.bg=c("magenta", rev(rbPal(6))), col="black", pch=21, pt.cex=diam*1.5,  bty="n", pt.lwd=2)
+   plot(x=pos_yval_colour[,1], y=pos_yval_colour[,2], pch=NA, xlab="", ylab=labely, cex.axis=font_size, cex.lab=font_size*axis_label_scaling, xlim=c(win_start,win_end), ylim=c(miny,maxy)) # initialise plotting window
+  if(length(highlight) == 2){
+    rect(xleft = highlight[1], xright = highlight[2], ybottom=-2, ytop=maxy+2, col = highlight_col, border = NA) # plot highlight
+  }
+  points(x=pos_yval_colour[,1], y=pos_yval_colour[,2], pch=21, col="black", bg=pos_yval_colour[,3], lwd=2, cex=diameter*1.5) # plot test values 
+  legend("topleft", title=expression("R"^2),legend=c("focal SNP",1,0.8,0.6,0.4,0.2,0), pt.bg=c("magenta", rev(rbPal(6))), col="black", pch=21, pt.cex=diameter*1.5,  bty="n", pt.lwd=2, cex=font_size)
   # Add labels to focal SNP and other specified SNPs
   lapply(positions, plot_label, pos_yval_colour=pos_yval_colour)
   # Add significance threshold to plot if specified
@@ -214,12 +190,69 @@ plot_test_values <- function(pos_yval_colour, log_transform, sig_threshold){
   }
 }
 
-## Function to plot annotations panel
-plot_annotations <- function(gene_id, gtf_subset_df){
-  plot(0,type='n', axes = FALSE, ann=FALSE, xlim=c(win_start, win_end), ylim=c(0, 1.15), frame.plot= TRUE)
-  axis(3, xpd = TRUE)
-  invisible(lapply(gene_id, plot_gene, gtf=gtf_subset_df, levels=levels))
+#### Functions to plot annotations panel ####
+
+##  Function to plot exon annotation (subplot)
+plot_exon <- function(exon_row, b1, t1){
+  rect(xleft = exon_row["start"], xright = exon_row["end"], ybottom=b1, ytop=t1, col = "red" , border = NA)
 }
+
+## Function to plot genes (subplot)
+plot_gene <- function(gene_id, gtf, levels){
+  # subset the gtf to only gene of interest
+  gtf_mygene <- gtf[which(gtf$gene_id == gene_id),]
+  # Assign position based on levels
+  gene_level <- gtf_mygene[1,"level"]
+  level_width <- 1/levels
+  m <- level_width*(levels-gene_level)+0.5*level_width
+  t1 <- m + 0.3*level_width
+  b1 <- m - 0.3*level_width
+  # get label 
+  if(!is.na(gtf_mygene[1,"gene_name"])){
+    lab <- gtf_mygene[1,"gene_name"]
+  } else{
+    lab <- gene_id
+  }
+  if(gtf_mygene[1,"strand"] == "+"){
+    lab <- paste0(lab," >")
+  }else{
+    lab <- paste0("< ",lab)
+  }
+  # subset exons 
+  exons_gtf <- gtf_mygene[which(gtf_mygene$type == "exon"),]
+  # plot exons 
+  invisible(apply(exons_gtf, 1, plot_exon, b1=b1, t1=t1))
+  # plot extent of transcripts
+  segments(x0 = subset_genes[which(subset_genes$gene_id == gene_id), "t_start"], y0 = m, x1 = subset_genes[which(subset_genes$gene_id == gene_id), "t_end"], y1 = m ,col = "red", lty = 1, lwd=3) 
+  # plot 3UTR and 5UTR if present 
+  UTR_3 <- which(gtf_mygene$type == "three_prime_utr")
+  UTR_5 <- which(gtf_mygene$type == "five_prime_utr")
+  if(length(UTR_3) != 0){
+    rect(xleft = gtf_mygene[UTR_3,"start"], xright = gtf_mygene[UTR_3,"end"], ybottom=b1, ytop=t1, col = NA , border = "red", lwd = 0.1)
+  }
+  if(length(UTR_5) != 0){
+    rect(xleft = gtf_mygene[UTR_5,"start"], xright = gtf_mygene[UTR_5,"end"], ybottom=b1, ytop=t1, col = NA , border = "red", lwd = 0.1)
+  }
+  # plot labels 
+  if(gene_labels==TRUE){
+  midpoint = (gtf_mygene[1,"start"]+gtf_mygene[1,"end"])/2
+  text(x=midpoint, y=t1+0.2*level_width, labels=lab, cex = font_size*annot_label_scaling*level_width, col = "red", font=2)
+  }
+}
+
+## Function to plot annotations using subplot functions ##
+plot_annotations <- function(gene_id, gtf_ensembl, highlight){
+  plot(0,type='n', axes = FALSE, ann=FALSE, xlim=c(win_start, win_end), ylim=c(0, 1.15), frame.plot= TRUE) # initialise plot window
+  if(length(highlight) == 2){
+    rect(xleft = highlight[1], xright = highlight[2], ybottom=-1, ytop=2, col = highlight_col, border = NA) # plot highlight
+  }
+  title(ylab="Annotation", cex.lab=font_size*axis_label_scaling) # ylab 
+  invisible(lapply(gene_id, plot_gene, gtf=gtf_ensembl, levels=levels)) # plot each gene
+}
+
+
+
+#### PLOT & OUTPUT ####
 
 # Set annotation panel height
 annot_h = 0.25+0.75*levels
@@ -232,12 +265,12 @@ plot.new()
 layout(matrix(c(1,0,2,0,3),ncol=1), widths=c(17,17,17,17,17), heights=c(0.8,0.6,6,0.6,annot_h))
 par(mar = c(0,5,0,0), oma = c(5, 3, 2, 2), cex=2.5)
 plot_SNPs(points[,2])
-plot_test_values(points[,c(2,3,5)], transform, sig_line)
-plot_annotations(subset_genes[,"gene_id"], gtf_subset_df)
-mtext(text=paste0("Position on chromosome ", focal_chrom),side=1,line=1,outer=TRUE,cex=4)
+plot_test_values(points[,c(2,3,5)], transform, sig_line, diam, highlight)
+plot_annotations(subset_genes[,"gene_id"], gtf_ensembl, highlight)
+mtext(text=paste0("Position on chromosome ", focal_chrom),side=1,line=1,outer=TRUE,cex=font_size*axis_label_scaling*2.5)
 invisible(dev.off())
 
 # Ouput list of SNPs in window and their LD values
 colnames(points) <- c("chr","pos","test_value","R2_with_focalSNP","colour")
 write.table(points[,c(1,2,3,4)], paste0(output,"_plotted_SNP_values.txt"), quote=FALSE, sep = "\t", col.names=TRUE, row.names = FALSE)
-q()
+# q()

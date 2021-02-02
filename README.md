@@ -84,7 +84,7 @@ Executing plot_zoom  without any options will print a list of arguments & descri
 |`-c` <br>`--fschr`  | Int | Chromosome number of first entry in input file | Focal SNP: **chromosome number** (default is top SNP only if input is sorted by statistic value). | 
 |`-p` <br>`--fspos`  | Int | Position of first entry in input file | Focal SNP: **position**. Can also be used to specify other SNPs to be labelled in the plot by listing them, comma separated. (default is top SNP only if input is sorted by statistic value) | 
 | `-w` <br> `--window` | Int,Int | 50000,50000 | Start and end positions defining the window to be plotted (default uses a window 50,000bp upstream and downstream of the focal SNP. | 
-| `-s` <br> `--sigline` | Numeric or 'bfc' | NA |Value of significance threshold value to be plotted. Option bfc will plot a Bonferroni correction for the number of tests of p=0.05. If unused no sig line plotted.
+| `-s` <br> `--sigline` | Numeric or 'bfc' | NA |Value of significance threshold value to be plotted. Option bfc will plot a Bonferroni correction for the number of tests for p=0.05. If unused no sig line plotted.
 | `-l` <br> `--logtrans` | 0 or 1 | 1 |           Plot given statistic values (0) or their -log10 transform (1). <br>(default is to log transform)
 | `-d` <br> `--diameter` | Float | 1 | Point diamater scaling factor. | 
 
@@ -99,10 +99,10 @@ Executing plot_zoom  without any options will print a list of arguments & descri
 `./plot_zoom.sh \` <br>
 ` -i masoko_sex_GWAS.assoc.txt \` <br>
 ` -t 14 \` <br>
-` -b Astatotilapia_calliptera.fAstCal1.2.99.chr.gtf \` <br>
+` -b all_CalMas.bed` <br>
+` -a Astatotilapia_calliptera.fAstCal1.2.99.chr.gtf \` <br>
 ` -c 19 \` <br>
 ` -p 21581905,21728957 \` <br>
 ` -w 21500000,21750000 \` <br>
 ` -s bfc \` <br>
 ` -o masoko_sex_GWAS_chr19`
-
