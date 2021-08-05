@@ -1,14 +1,16 @@
 plot_zoom
 ====
 
-plot_zoom  is a tool for visualising results from genome-wide analyses that give test values for individual sites. The default parameters assume the results file has the same format as GEMMA output but it can also be used to plot other results. 
+plot_zoom  is a tool for visualising results from any genome-wide analysis that produces values for individual sites. Default parameters assumes an input file in the format of a [GEMMA](https://github.com/genetics-statistics/GEMMA) association output file but parameters can be adjusted to accomodate variations to this format. 
 
-It produces a figure of the region with 3 panels: 
-- A manhattan plot of a local region around a focal SNP, colouring SNPs by their level of LD with the focal SNP.
-- A plot showing the distribution of plotted SNPs.  
-- Gene annotations in the displayed region.
+plot_zoom outputs:
+- Figure (png) of the region with 3 panels: 
+	- A manhattan plot of a local region around a focal SNP, colouring SNPs by their level of LD with the focal SNP.
+	- A plot showing the distribution of plotted SNPs.  
+	- Gene annotations in the displayed region.
+- List of coordinates of SNPs in the window and their r^2 LD values with the focal SNP 
 
-The script itself is a wrapper around region_plotter.R which does the plotting, this R script must remain in the same directory as the plot_zoom executable.
+NB: As the script itself is a wrapper around region_plotter.R which performs all plotting, this R script must remain in the same directory as the plot_zoom executable.
 
 Dependencies:
 
@@ -24,7 +26,7 @@ Ready to use once repository has been pulled. Keep both .R and .sh scripts in th
 ## Before you start
 ____
 
-Make sure that PLINK is installed and that the executable (plink) is in your path or the current working directory.
+Ensure that PLINK is installed and that the executable (plink) is in your path or the current working directory.
 
 Install Bioconductor & rtracklayer:
 
@@ -37,13 +39,11 @@ Install Bioconductor & rtracklayer:
 
 You will first need to produce PLINK BED files from the VCF which you would like LD values to be calculated from.
 
-This will generally be the same for each analysis that uses the same dataset; for my Lake Masoko analyses (all_CalMas) I have included these in the examples subdirectory.
+This will generally be the same for each analysis performed on the same dataset; for my Lake Masoko Astatotilapia calliptera analyses (all_CalMas) I have included these in the examples subdirectory.
 
 If using a different dataset then first use PLINK to generate these files:
 
 E.g. The example Lake Masoko files were generated as follows:
-`plink --vcf dataset_name.vcf.gz --make-bed --out dataset_name`
-
 `plink --vcf ~/rds/rds-rd109-durbin-group/projects/cichlid/massoko/all_CalMas/masked_snps/sex/all_CalMas_variants_genome_clean.vcf --make-bed --set-missing-var-ids @:# --out all_CalMas`
 
 Or generally (input vcf can be gzipped or uncompressed):
@@ -62,9 +62,9 @@ This format and the default selections for the chromosome and position columns c
 ## Usage
 ___
 
-You must give the full path to the plot_zoom executable script for now (i.e. don't put it in your path, it won't work)
+You must provide the full path to the plot_zoom executable script to run it (i.e. don't try to put it in your path, it won't work)
 
-Executing plot_zoom  without any options will print a list of arguments & descriptors:
+Executing plot_zoom without any options will print a list of arguments & descriptors:
 
 ### Essential Arguments
 | Argument      |    Type    | Description |
@@ -84,9 +84,12 @@ Executing plot_zoom  without any options will print a list of arguments & descri
 |`-c` <br>`--fschr`  | Int | Chromosome number of first entry in input file | Focal SNP: **chromosome number** (default is top SNP only if input is sorted by statistic value). | 
 |`-p` <br>`--fspos`  | Int | Position of first entry in input file | Focal SNP: **position**. Can also be used to specify other SNPs to be labelled in the plot by listing them, comma separated. (default is top SNP only if input is sorted by statistic value) | 
 | `-w` <br> `--window` | Int,Int | 50000,50000 | Start and end positions defining the window to be plotted (default uses a window 50,000bp upstream and downstream of the focal SNP. | 
-| `-s` <br> `--sigline` | Numeric or 'bfc' | NA |Value of significance threshold value to be plotted. Option bfc will plot a Bonferroni correction for the number of tests for p=0.05. If unused no sig line plotted.
+| `-s` <br> `--sigline` | Numeric or 'bfc' | NA |Value of significance threshold value to be plotted. Option bfc will plot a Bonferroni correction for the number of tests for p=0.05. If unused no sig line plotted. |
 | `-l` <br> `--logtrans` | 0 or 1 | 1 |           Plot given statistic values (0) or their -log10 transform (1). <br>(default is to log transform)
-| `-d` <br> `--diameter` | Float | 1 | Point diamater scaling factor. | 
+| `-d` <br> `--diameter` | Float | 1 | Point diamater scaling factor. |
+| `-f` <br> `--fontsize` | Float | 1 | Base font size scaling factor. | 
+| `-g` <br> `--genelabs` | 0 or 1 | 1 | Include (1) or exclude (1) gene name annotations. |
+| `-z` <br> `--highlight` | Int,Int | NA | Start and end genome positions of a region to highlight. |
 
 ### Ouput files
 

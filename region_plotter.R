@@ -250,8 +250,6 @@ plot_annotations <- function(gene_id, gtf_ensembl, highlight){
   invisible(lapply(gene_id, plot_gene, gtf=gtf_ensembl, levels=levels)) # plot each gene
 }
 
-
-
 #### PLOT & OUTPUT ####
 
 # Set annotation panel height
@@ -273,4 +271,5 @@ invisible(dev.off())
 # Ouput list of SNPs in window and their LD values
 colnames(points) <- c("chr","pos","test_value","R2_with_focalSNP","colour")
 write.table(points[,c(1,2,3,4)], paste0(output,"_plotted_SNP_values.txt"), quote=FALSE, sep = "\t", col.names=TRUE, row.names = FALSE)
-# q()
+
+q()
