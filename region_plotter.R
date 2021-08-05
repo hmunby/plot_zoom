@@ -1,7 +1,7 @@
 #!/usr/bin/env Rscript
 
 # Plot zoomed plot around GWAS hit and highlight specific SNPs
-# manhattan_zoom.R [GEMMA association output file] [PLINK ld output file] [focal snp: chr] [focal snp: pos] [test statistic pval] [output prefix]
+# region_plotter.R [GEMMA association output file] [PLINK ld output file] [focal snp: chr] [focal snp: pos] [test statistic pval] [output prefix]
 
 #### Import arguments, load library ####
 
