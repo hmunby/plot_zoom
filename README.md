@@ -1,6 +1,8 @@
 plot_zoom
 ====
 
+![Example output plot](example.png)
+
 plot_zoom  is a tool for visualising results from any genome-wide analysis that produces values for individual sites. Default parameters assumes an input file in the format of a [GEMMA](https://github.com/genetics-statistics/GEMMA) association output file but parameters can be adjusted to accomodate variations to this format. 
 
 plot_zoom outputs:
